@@ -30,16 +30,49 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const texture = new THREE.TextureLoader().load(images[currentFrame]);
+        const texture = new THREE.TextureLoader().load(images[currentFrame], (tex) => {
+            const imageAspect = tex.image.width / tex.image.height;
+            const screenAspect = window.innerWidth / window.innerHeight;
+            let width, height;
+
+            if (screenAspect > imageAspect) {
+                height = 3; // Fixed height
+                width = height * imageAspect;
+            } else {
+                width = 5; // Fixed width
+                height = width / imageAspect;
+            }
+
+            const geometry = new THREE.PlaneGeometry(width, height);
+            plane.geometry.dispose();
+            plane.geometry = geometry;
+        });
+
         const material = new THREE.MeshBasicMaterial({ map: texture });
-        const geometry = new THREE.PlaneGeometry(5, 3);
+        const geometry = new THREE.PlaneGeometry(5, 3); // Placeholder geometry, will be adjusted later
         const plane = new THREE.Mesh(geometry, material);
         scene.add(plane);
         camera.position.z = 5;
 
         function updateTexture(frame) {
             texture.dispose();
-            const newTexture = new THREE.TextureLoader().load(images[frame]);
+            const newTexture = new THREE.TextureLoader().load(images[frame], (tex) => {
+                const imageAspect = tex.image.width / tex.image.height;
+                const screenAspect = window.innerWidth / window.innerHeight;
+                let width, height;
+
+                if (screenAspect > imageAspect) {
+                    height = 3; // Fixed height
+                    width = height * imageAspect;
+                } else {
+                    width = 5; // Fixed width
+                    height = width / imageAspect;
+                }
+
+                const newGeometry = new THREE.PlaneGeometry(width, height);
+                plane.geometry.dispose();
+                plane.geometry = newGeometry;
+            });
             plane.material.map = newTexture;
         }
 
