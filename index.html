@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,13 +32,35 @@
         document.body.appendChild(renderer.domElement);
 
         const material = new THREE.MeshBasicMaterial({ map: textureCache[currentFrame] });
-        const geometry = new THREE.PlaneGeometry(5, 3);
-        const plane = new THREE.Mesh(geometry, material);
-        scene.add(plane);
-        camera.position.z = 5;
+        let plane;
+
+        function createPlaneWithAspect(texture) {
+            const imageAspect = texture.image.width / texture.image.height;
+            const screenAspect = window.innerWidth / window.innerHeight;
+            let width, height;
+
+            if (screenAspect > imageAspect) {
+                height = 5; // Fixed height
+                width = height * imageAspect;
+            } else {
+                width = 5; // Fixed width
+                height = width / imageAspect;
+            }
+
+            const geometry = new THREE.PlaneGeometry(width, height);
+            if (plane) {
+                plane.geometry.dispose();
+                scene.remove(plane);
+            }
+            plane = new THREE.Mesh(geometry, material);
+            scene.add(plane);
+        }
+
+        textureCache[currentFrame].onUpdate = () => createPlaneWithAspect(textureCache[currentFrame]);
 
         function updateTexture(frame) {
-            plane.material.map = textureCache[frame];
+            material.map = textureCache[frame];
+            createPlaneWithAspect(textureCache[frame]);
         }
 
         let isDragging = false;
