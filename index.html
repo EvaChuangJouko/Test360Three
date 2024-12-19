@@ -4,65 +4,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>360° Viewer</title>
+    <title>360 Viewer</title>
     <script src="three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
 </head>
-<body style="margin: 0; overflow: hidden;">
-    <canvas id="canvas"></canvas>
+<body>
     <script>
-        // Create a scene, camera, and renderer
+        let images = [];
+        const totalFrames = 36;
+        let currentFrame = 0;
+
+        // Preload images
+        for (let i = 1; i <= totalFrames; i++) {
+            const frameNumber = String(i).padStart(2, '0');
+            images.push(`images/frame_${frameNumber}.jpg`);
+        }
+
+        // Setup Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas') });
+        const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        
-        // Load textures (image sequence)
-        const textureLoader = new THREE.TextureLoader();
-        const imagePaths = [];
-        for (let i = 1; i <= 36; i++) {
-            imagePaths.push(`images/frame_${String(i).padStart(2, '0')}.jpg`);
-        }
-        
-        let currentTextureIndex = 0;
-        const textures = imagePaths.map(path => textureLoader.load(path));
-        
-        // Create a plane for displaying the texture
-        const geometry = new THREE.PlaneGeometry(5, 5);
-        const material = new THREE.MeshBasicMaterial({ map: textures[currentTextureIndex] });
+        document.body.appendChild(renderer.domElement);
+
+        const texture = new THREE.TextureLoader().load(images[currentFrame]);
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const geometry = new THREE.PlaneGeometry(5, 3);
         const plane = new THREE.Mesh(geometry, material);
         scene.add(plane);
         camera.position.z = 5;
-        
-        // Handle rotation interaction
+
+        function updateTexture(frame) {
+            texture.dispose();
+            const newTexture = new THREE.TextureLoader().load(images[frame]);
+            plane.material.map = newTexture;
+        }
+
         let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        
-        const updateTexture = () => {
-            currentTextureIndex = (currentTextureIndex + 1) % textures.length;
-            material.map = textures[currentTextureIndex];
-        };
-        
-        window.addEventListener('mousedown', (event) => {
+        let startX = 0;
+
+        window.addEventListener('mousedown', (e) => {
             isDragging = true;
+            startX = e.clientX;
         });
-        window.addEventListener('mousemove', (event) => {
-            if (isDragging) {
-                const deltaX = event.clientX - previousMousePosition.x;
-                if (Math.abs(deltaX) > 5) {
-                    updateTexture();
-                }
-                previousMousePosition = { x: event.clientX, y: event.clientY };
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+
+            if (deltaX > 10) {
+                currentFrame = (currentFrame + 1) % totalFrames;
+                updateTexture(currentFrame);
+                startX = e.clientX;
+            } else if (deltaX < -10) {
+                currentFrame = (currentFrame - 1 + totalFrames) % totalFrames;
+                updateTexture(currentFrame);
+                startX = e.clientX;
             }
         });
+
         window.addEventListener('mouseup', () => {
             isDragging = false;
         });
-        
-        // Render loop
-        const animate = () => {
+
+        function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
-        };
+        }
         animate();
     </script>
 </body>
